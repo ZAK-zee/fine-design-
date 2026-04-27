@@ -69,7 +69,7 @@ const DashboardPage = () => {
   const [aboutId, setAboutId] = useState(null);
   const [stats, setStats] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
-  const [siteSettings, setSiteSettings] = useState({ phone: '', email: '', address: '', whatsapp: '', hero_tagline: '', hero_subtitle: '' });
+  const [siteSettings, setSiteSettings] = useState({ phone: '', email: '', address: '', whatsapp: '', hours: '', map_url: '', map_link: '', hero_tagline: '', hero_subtitle: '' });
   const [siteSettingsId, setSiteSettingsId] = useState(null);
 
   // Portfolio state
@@ -357,6 +357,9 @@ const DashboardPage = () => {
         email: siteSettings.email,
         address: siteSettings.address,
         whatsapp: siteSettings.whatsapp,
+        hours: siteSettings.hours,
+        map_url: siteSettings.map_url,
+        map_link: siteSettings.map_link,
         hero_tagline: siteSettings.hero_tagline,
         hero_subtitle: siteSettings.hero_subtitle,
         updated_at: new Date().toISOString(),
@@ -799,6 +802,20 @@ const DashboardPage = () => {
                     <div>
                       <label className="text-sm font-semibold text-gray-700 block mb-2">Address</label>
                       <Input value={siteSettings.address || ''} onChange={e => setSiteSettings({...siteSettings, address: e.target.value})} placeholder="Dubai, United Arab Emirates" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Working Hours</label>
+                      <Input value={siteSettings.hours || ''} onChange={e => setSiteSettings({...siteSettings, hours: e.target.value})} placeholder="Sun - Thu: 9:00 AM - 6:00 PM" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Google Maps — Embed URL</label>
+                      <Input value={siteSettings.map_url || ''} onChange={e => setSiteSettings({...siteSettings, map_url: e.target.value})} placeholder="https://www.google.com/maps/embed?pb=..." />
+                      <p className="text-xs text-gray-400 mt-1">Google Maps → Share → Embed a map → copy only the src="..." URL. This shows the map on the Contact page.</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Google Maps — Short Link</label>
+                      <Input value={siteSettings.map_link || ''} onChange={e => setSiteSettings({...siteSettings, map_link: e.target.value})} placeholder="https://maps.app.goo.gl/..." />
+                      <p className="text-xs text-gray-400 mt-1">The short link from Google Maps → Share → Copy link. Used for the clickable address in the footer.</p>
                     </div>
                   </div>
                 </div>

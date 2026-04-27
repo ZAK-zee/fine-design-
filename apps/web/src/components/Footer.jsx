@@ -90,9 +90,9 @@ const Footer = () => {
               <a href={"mailto:" + email} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                 <Mail className="w-4 h-4 flex-shrink-0" />{email}
               </a>
-              <div className="flex items-start gap-2 text-sm text-primary-foreground/80">
+              <a href={siteSettings?.map_link || 'https://maps.app.goo.gl/ckduZQMiUnG6pNUN7'} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />{address}
-              </div>
+              </a>
             </div>
           </div>
 
