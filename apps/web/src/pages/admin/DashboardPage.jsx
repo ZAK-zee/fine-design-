@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient.js';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Image, Wrench, MessageSquare, LogOut, Plus, Trash2, X, Upload, Pencil, Users, Star, FileText, LayoutDashboard } from 'lucide-react';
+import { Image, Wrench, MessageSquare, LogOut, Plus, Trash2, X, Upload, Pencil, Users, Star, FileText, LayoutDashboard, Share2, Settings } from 'lucide-react';
 
 const TABS = [
   { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -13,9 +13,12 @@ const TABS = [
   { id: 'team', label: 'Team', icon: Users },
   { id: 'about', label: 'About Page', icon: FileText },
   { id: 'stats', label: 'Stats', icon: LayoutDashboard },
+  { id: 'social', label: 'Social Media', icon: Share2 },
+  { id: 'settings', label: 'Site Settings', icon: Settings },
 ];
 
 const CATEGORIES = ['Construction', 'Interior Finishing', 'Fit-Out', 'HVAC', 'Fire Protection', 'Civil Works'];
+const SOCIAL_PLATFORMS = ['Facebook', 'Instagram', 'LinkedIn', 'Twitter', 'YouTube', 'Website'];
 
 const Modal = ({ title, onClose, children }) => (
   <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -54,8 +57,9 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('messages');
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null); // 'admin' or 'viewer'
+  const isAdmin = userRole === 'admin';
 
-  // Data
   const [messages, setMessages] = useState([]);
   const [portfolio, setPortfolio] = useState([]);
   const [services, setServices] = useState([]);
@@ -63,6 +67,10 @@ const DashboardPage = () => {
   const [team, setTeam] = useState([]);
   const [aboutContent, setAboutContent] = useState({ story: '', mission: '', image_url: '' });
   const [aboutId, setAboutId] = useState(null);
+  const [stats, setStats] = useState([]);
+  const [socialLinks, setSocialLinks] = useState([]);
+  const [siteSettings, setSiteSettings] = useState({ phone: '', email: '', address: '', whatsapp: '', hero_tagline: '', hero_subtitle: '' });
+  const [siteSettingsId, setSiteSettingsId] = useState(null);
 
   // Portfolio state
   const [showAddPhoto, setShowAddPhoto] = useState(false);
@@ -98,21 +106,30 @@ const DashboardPage = () => {
   // About state
   const [aboutFile, setAboutFile] = useState(null);
   const [savingAbout, setSavingAbout] = useState(false);
-
-  // Stats state
-  const [stats, setStats] = useState([]);
   const [savingStats, setSavingStats] = useState(false);
+
+  // Social state
+  const [showAddSocial, setShowAddSocial] = useState(false);
+  const [showEditSocial, setShowEditSocial] = useState(false);
+  const [socialForm, setSocialForm] = useState({ platform: SOCIAL_PLATFORMS[0], url: '' });
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [editingSocial, setEditingSocial] = useState(null);
+
+  // Site settings state
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => { checkAuth(); fetchAll(); }, []);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) navigate('/admin/login');
+    if (!session) { navigate('/admin/login'); return; }
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id).single();
+    setUserRole(roleData?.role || 'admin'); // fallback to admin if no role set (existing users)
   };
 
   const fetchAll = async () => {
     setIsLoading(true);
-    const [msgRes, portRes, svcRes, testRes, teamRes, aboutRes, statsRes] = await Promise.all([
+    const [msgRes, portRes, svcRes, testRes, teamRes, aboutRes, statsRes, socialRes, settingsRes] = await Promise.all([
       supabase.from('messages').select('*').order('created_at', { ascending: false }),
       supabase.from('portfolio').select('*').order('created_at', { ascending: false }),
       supabase.from('services').select('*').order('created_at', { ascending: true }),
@@ -120,6 +137,8 @@ const DashboardPage = () => {
       supabase.from('team').select('*').order('created_at', { ascending: true }),
       supabase.from('about_content').select('*').order('updated_at', { ascending: false }).limit(1),
       supabase.from('about_stats').select('*').order('sort_order', { ascending: true }),
+      supabase.from('social_links').select('*').order('sort_order', { ascending: true }),
+      supabase.from('site_settings').select('*').limit(1),
     ]);
     if (msgRes.data) setMessages(msgRes.data);
     if (portRes.data) setPortfolio(portRes.data);
@@ -128,6 +147,11 @@ const DashboardPage = () => {
     if (teamRes.data) setTeam(teamRes.data);
     if (aboutRes.data && aboutRes.data.length > 0) { setAboutContent(aboutRes.data[0]); setAboutId(aboutRes.data[0].id); }
     if (statsRes.data) setStats(statsRes.data);
+    if (socialRes.data) setSocialLinks(socialRes.data);
+    if (settingsRes.data && settingsRes.data.length > 0) {
+      setSiteSettings(settingsRes.data[0]);
+      setSiteSettingsId(settingsRes.data[0].id);
+    }
     setIsLoading(false);
   };
 
@@ -142,14 +166,14 @@ const DashboardPage = () => {
     return data.publicUrl;
   };
 
-  // ── Messages
+  // Messages
   const deleteMessage = async (id) => {
     await supabase.from('messages').delete().eq('id', id);
     setMessages(messages.filter(m => m.id !== id));
     toast.success('Deleted ✅');
   };
 
-  // ── Portfolio
+  // Portfolio
   const addPhoto = async () => {
     if (!photoForm.title || (!photoFile && !photoForm.image_url)) { toast.error('Add title and image'); return; }
     setUploadingPhoto(true);
@@ -183,7 +207,7 @@ const DashboardPage = () => {
 
   const deletePhoto = async (id) => { await supabase.from('portfolio').delete().eq('id', id); setPortfolio(portfolio.filter(p => p.id !== id)); toast.success('Deleted ✅'); };
 
-  // ── Services
+  // Services
   const addService = async () => {
     if (!serviceForm.title || !serviceForm.description) { toast.error('Fill title and description'); return; }
     setUploadingService(true);
@@ -219,7 +243,7 @@ const DashboardPage = () => {
 
   const deleteService = async (id) => { await supabase.from('services').delete().eq('id', id); setServices(services.filter(s => s.id !== id)); toast.success('Deleted ✅'); };
 
-  // ── Testimonials
+  // Testimonials
   const addTestimonial = async () => {
     if (!testimonialForm.author || !testimonialForm.text) { toast.error('Fill author and review'); return; }
     setSavingTestimonial(true);
@@ -239,7 +263,7 @@ const DashboardPage = () => {
 
   const deleteTestimonial = async (id) => { await supabase.from('testimonials').delete().eq('id', id); setTestimonials(testimonials.filter(t => t.id !== id)); toast.success('Deleted ✅'); };
 
-  // ── Team
+  // Team
   const addTeamMember = async () => {
     if (!teamForm.name) { toast.error('Name is required'); return; }
     setSavingTeam(true);
@@ -271,7 +295,7 @@ const DashboardPage = () => {
 
   const deleteTeamMember = async (id) => { await supabase.from('team').delete().eq('id', id); setTeam(team.filter(m => m.id !== id)); toast.success('Deleted ✅'); };
 
-  // ── About
+  // About
   const saveAbout = async () => {
     setSavingAbout(true);
     try {
@@ -288,6 +312,64 @@ const DashboardPage = () => {
       toast.success('About page updated ✅');
     } catch { toast.error('Failed to save'); }
     setSavingAbout(false);
+  };
+
+  // Social Links
+  const addSocialLink = async () => {
+    if (!socialForm.url) { toast.error('Enter a URL'); return; }
+    setSavingSocial(true);
+    try {
+      const { data, error } = await supabase.from('social_links').insert([{ ...socialForm, sort_order: socialLinks.length }]).select();
+      if (error) throw error;
+      setSocialLinks([...socialLinks, data[0]]);
+      setShowAddSocial(false); setSocialForm({ platform: SOCIAL_PLATFORMS[0], url: '' });
+      toast.success('Social link added ✅');
+    } catch { toast.error('Failed'); }
+    setSavingSocial(false);
+  };
+
+  const openEditSocial = (s) => { setEditingSocial(s); setSocialForm({ platform: s.platform, url: s.url }); setShowEditSocial(true); };
+
+  const saveEditSocial = async () => {
+    setSavingSocial(true);
+    try {
+      const { data, error } = await supabase.from('social_links').update(socialForm).eq('id', editingSocial.id).select();
+      if (error) throw error;
+      setSocialLinks(socialLinks.map(s => s.id === editingSocial.id ? data[0] : s));
+      setShowEditSocial(false); setEditingSocial(null);
+      toast.success('Updated ✅');
+    } catch { toast.error('Failed'); }
+    setSavingSocial(false);
+  };
+
+  const deleteSocialLink = async (id) => {
+    await supabase.from('social_links').delete().eq('id', id);
+    setSocialLinks(socialLinks.filter(s => s.id !== id));
+    toast.success('Deleted ✅');
+  };
+
+  // Site Settings
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const payload = {
+        phone: siteSettings.phone,
+        email: siteSettings.email,
+        address: siteSettings.address,
+        whatsapp: siteSettings.whatsapp,
+        hero_tagline: siteSettings.hero_tagline,
+        hero_subtitle: siteSettings.hero_subtitle,
+        updated_at: new Date().toISOString(),
+      };
+      if (siteSettingsId) {
+        await supabase.from('site_settings').update(payload).eq('id', siteSettingsId);
+      } else {
+        const { data } = await supabase.from('site_settings').insert([payload]).select();
+        if (data) setSiteSettingsId(data[0].id);
+      }
+      toast.success('Settings saved ✅');
+    } catch { toast.error('Failed to save'); }
+    setSavingSettings(false);
   };
 
   const dashStats = [
@@ -309,7 +391,7 @@ const DashboardPage = () => {
         </div>
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           <p className="text-white/30 text-xs uppercase tracking-widest px-3 mb-3">Navigation</p>
-          {TABS.map(tab => (
+          {TABS.filter(tab => isAdmin || tab.id === 'messages').map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.id ? 'bg-[#C9A84C] text-black' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
               <tab.icon className="w-5 h-5" />{tab.label}
@@ -325,7 +407,6 @@ const DashboardPage = () => {
 
       {/* Main */}
       <main className="flex-1 ml-64 p-8">
-        {/* Stats */}
         <div className="grid grid-cols-4 gap-4 mb-8">
           {dashStats.map(s => (
             <div key={s.label} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
@@ -337,7 +418,15 @@ const DashboardPage = () => {
 
         {isLoading ? <div className="text-center py-20 text-gray-400">Loading...</div> : (<>
 
-          {/* ── MESSAGES */}
+          {/* Viewer notice */}
+          {userRole === 'viewer' && (
+            <div className="mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 text-sm flex items-center gap-3">
+              <span className="text-lg">👁️</span>
+              <span>You have <strong>view-only</strong> access. You can read messages but cannot make any changes.</span>
+            </div>
+          )}
+
+          {/* MESSAGES */}
           {activeTab === 'messages' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
@@ -348,9 +437,7 @@ const DashboardPage = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 text-gray-500 text-sm">
-                      <tr>
-                        {['Name','Email','Phone','Message','Date',''].map(h => <th key={h} className="px-6 py-3 text-left">{h}</th>)}
-                      </tr>
+                      <tr>{['Name','Email','Phone','Message','Date',''].map(h => <th key={h} className="px-6 py-3 text-left">{h}</th>)}</tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {messages.map(msg => (
@@ -360,7 +447,7 @@ const DashboardPage = () => {
                           <td className="px-6 py-4 text-gray-600">{msg.phone}</td>
                           <td className="px-6 py-4 text-gray-600 max-w-xs truncate">{msg.message}</td>
                           <td className="px-6 py-4 text-gray-400 text-sm">{new Date(msg.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-4"><button onClick={() => deleteMessage(msg.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button></td>
+                          <td className="px-6 py-4">{isAdmin && <button onClick={() => deleteMessage(msg.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -370,14 +457,13 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* ── PORTFOLIO */}
+          {/* PORTFOLIO */}
           {activeTab === 'portfolio' && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Image className="w-5 h-5 text-[#C9A84C]" />Portfolio Photos</h2>
                 <button onClick={() => { setPhotoForm({ title: '', category: CATEGORIES[0], description: '', image_url: '' }); setPhotoFile(null); setShowAddPhoto(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Photo</button>
               </div>
-
               {showAddPhoto && <Modal title="Add Photo" onClose={() => setShowAddPhoto(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Title *</label><Input value={photoForm.title} onChange={e => setPhotoForm({...photoForm, title: e.target.value})} placeholder="Project title" /></div>
@@ -387,12 +473,11 @@ const DashboardPage = () => {
                     </select>
                   </div>
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Short Description</label><Input value={photoForm.description} onChange={e => setPhotoForm({...photoForm, description: e.target.value})} placeholder="Brief summary shown on hover" /></div>
-                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Full Details (shown in modal)</label><textarea value={photoForm.details || ''} onChange={e => setPhotoForm({...photoForm, details: e.target.value})} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" placeholder="Full project details, materials used, scope of work..." /></div>
+                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Full Details</label><textarea value={photoForm.details || ''} onChange={e => setPhotoForm({...photoForm, details: e.target.value})} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" placeholder="Full project details..." /></div>
                   <ImageUpload file={photoFile} setFile={setPhotoFile} currentUrl={photoForm.image_url} />
                 </div>
                 <ModalActions onCancel={() => setShowAddPhoto(false)} onSave={addPhoto} saving={uploadingPhoto} saveLabel="Add Photo" saveStyle="dark" />
               </Modal>}
-
               {showEditPhoto && <Modal title="Edit Photo" onClose={() => setShowEditPhoto(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Title *</label><Input value={photoForm.title} onChange={e => setPhotoForm({...photoForm, title: e.target.value})} /></div>
@@ -402,12 +487,11 @@ const DashboardPage = () => {
                     </select>
                   </div>
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Short Description</label><Input value={photoForm.description} onChange={e => setPhotoForm({...photoForm, description: e.target.value})} /></div>
-                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Full Details (shown in modal)</label><textarea value={photoForm.details || ''} onChange={e => setPhotoForm({...photoForm, details: e.target.value})} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" placeholder="Full project details..." /></div>
+                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Full Details</label><textarea value={photoForm.details || ''} onChange={e => setPhotoForm({...photoForm, details: e.target.value})} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" /></div>
                   <ImageUpload file={photoFile} setFile={setPhotoFile} currentUrl={photoForm.image_url} />
                 </div>
                 <ModalActions onCancel={() => setShowEditPhoto(false)} onSave={saveEditPhoto} saving={uploadingPhoto} saveLabel="Save Changes" />
               </Modal>}
-
               {portfolio.length === 0 ? <div className="bg-white rounded-2xl border border-gray-200 text-center py-20 text-gray-400">No photos yet</div> : (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                   {portfolio.map(item => (
@@ -430,14 +514,13 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* ── SERVICES */}
+          {/* SERVICES */}
           {activeTab === 'services' && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Wrench className="w-5 h-5 text-[#C9A84C]" />Services</h2>
                 <button onClick={() => { setServiceForm({ title: '', description: '', features: '', image_url: '' }); setServiceFile(null); setShowAddService(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Service</button>
               </div>
-
               {showAddService && <Modal title="Add Service" onClose={() => setShowAddService(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Title *</label><Input value={serviceForm.title} onChange={e => setServiceForm({...serviceForm, title: e.target.value})} placeholder="Service title" /></div>
@@ -447,7 +530,6 @@ const DashboardPage = () => {
                 </div>
                 <ModalActions onCancel={() => setShowAddService(false)} onSave={addService} saving={uploadingService} saveLabel="Add Service" saveStyle="dark" />
               </Modal>}
-
               {showEditService && <Modal title="Edit Service" onClose={() => setShowEditService(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Title *</label><Input value={serviceForm.title} onChange={e => setServiceForm({...serviceForm, title: e.target.value})} /></div>
@@ -457,7 +539,6 @@ const DashboardPage = () => {
                 </div>
                 <ModalActions onCancel={() => setShowEditService(false)} onSave={saveEditService} saving={uploadingService} saveLabel="Save Changes" />
               </Modal>}
-
               {services.length === 0 ? <div className="bg-white rounded-2xl border border-gray-200 text-center py-20 text-gray-400">No services yet</div> : (
                 <div className="space-y-4">
                   {services.map(svc => (
@@ -479,14 +560,13 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* ── TESTIMONIALS */}
+          {/* TESTIMONIALS */}
           {activeTab === 'testimonials' && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Star className="w-5 h-5 text-[#C9A84C]" />Client Reviews</h2>
                 <button onClick={() => { setTestimonialForm({ author: '', role: '', text: '', rating: 5 }); setShowAddTestimonial(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Review</button>
               </div>
-
               {showAddTestimonial && <Modal title="Add Review" onClose={() => setShowAddTestimonial(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Client Name *</label><Input value={testimonialForm.author} onChange={e => setTestimonialForm({...testimonialForm, author: e.target.value})} placeholder="e.g. Ahmed Al Mansoori" /></div>
@@ -498,7 +578,6 @@ const DashboardPage = () => {
                 </div>
                 <ModalActions onCancel={() => setShowAddTestimonial(false)} onSave={addTestimonial} saving={savingTestimonial} saveLabel="Add Review" saveStyle="dark" />
               </Modal>}
-
               {showEditTestimonial && <Modal title="Edit Review" onClose={() => setShowEditTestimonial(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Client Name *</label><Input value={testimonialForm.author} onChange={e => setTestimonialForm({...testimonialForm, author: e.target.value})} /></div>
@@ -510,16 +589,12 @@ const DashboardPage = () => {
                 </div>
                 <ModalActions onCancel={() => setShowEditTestimonial(false)} onSave={saveEditTestimonial} saving={savingTestimonial} saveLabel="Save Changes" />
               </Modal>}
-
               {testimonials.length === 0 ? <div className="bg-white rounded-2xl border border-gray-200 text-center py-20 text-gray-400">No reviews yet</div> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {testimonials.map(t => (
                     <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                       <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <p className="font-bold text-[#1A2744]">{t.author}</p>
-                          <p className="text-sm text-gray-500">{t.role}</p>
-                        </div>
+                        <div><p className="font-bold text-[#1A2744]">{t.author}</p><p className="text-sm text-gray-500">{t.role}</p></div>
                         <div className="flex gap-2">
                           <button onClick={() => openEditTestimonial(t)} className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteTestimonial(t.id)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
@@ -534,14 +609,13 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* ── TEAM */}
+          {/* TEAM */}
           {activeTab === 'team' && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Users className="w-5 h-5 text-[#C9A84C]" />Team Members</h2>
                 <button onClick={() => { setTeamForm({ name: '', role: '', bio: '', image_url: '' }); setTeamFile(null); setShowAddTeam(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Member</button>
               </div>
-
               {showAddTeam && <Modal title="Add Team Member" onClose={() => setShowAddTeam(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Name *</label><Input value={teamForm.name} onChange={e => setTeamForm({...teamForm, name: e.target.value})} placeholder="Full name" /></div>
@@ -551,7 +625,6 @@ const DashboardPage = () => {
                 </div>
                 <ModalActions onCancel={() => setShowAddTeam(false)} onSave={addTeamMember} saving={savingTeam} saveLabel="Add Member" saveStyle="dark" />
               </Modal>}
-
               {showEditTeam && <Modal title="Edit Team Member" onClose={() => setShowEditTeam(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Name *</label><Input value={teamForm.name} onChange={e => setTeamForm({...teamForm, name: e.target.value})} /></div>
@@ -561,7 +634,6 @@ const DashboardPage = () => {
                 </div>
                 <ModalActions onCancel={() => setShowEditTeam(false)} onSave={saveEditTeam} saving={savingTeam} saveLabel="Save Changes" />
               </Modal>}
-
               {team.length === 0 ? <div className="bg-white rounded-2xl border border-gray-200 text-center py-20 text-gray-400">No team members yet</div> : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   {team.map(member => (
@@ -584,7 +656,7 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* ── ABOUT */}
+          {/* ABOUT */}
           {activeTab === 'about' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-3xl">
               <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
@@ -594,105 +666,159 @@ const DashboardPage = () => {
               <div className="space-y-6">
                 <div>
                   <label className="text-sm font-semibold text-gray-700 block mb-2">Company Story</label>
-                  <textarea
-                    value={aboutContent.story || ''}
-                    onChange={e => setAboutContent({...aboutContent, story: e.target.value})}
-                    rows={5}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none"
-                    placeholder="Tell your company story..."
-                  />
+                  <textarea value={aboutContent.story || ''} onChange={e => setAboutContent({...aboutContent, story: e.target.value})} rows={5} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" placeholder="Tell your company story..." />
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-gray-700 block mb-2">Mission Statement</label>
-                  <textarea
-                    value={aboutContent.mission || ''}
-                    onChange={e => setAboutContent({...aboutContent, mission: e.target.value})}
-                    rows={4}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none"
-                    placeholder="What is your mission?"
-                  />
+                  <textarea value={aboutContent.mission || ''} onChange={e => setAboutContent({...aboutContent, mission: e.target.value})} rows={4} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" placeholder="What is your mission?" />
                 </div>
                 <ImageUpload file={aboutFile} setFile={setAboutFile} currentUrl={aboutContent.image_url} label="About Page Image" />
-                <button
-                  onClick={saveAbout}
-                  disabled={savingAbout}
-                  className="w-full py-3 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90 transition-all disabled:opacity-50"
-                >
+                <button onClick={saveAbout} disabled={savingAbout} className="w-full py-3 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90 transition-all disabled:opacity-50">
                   {savingAbout ? 'Saving...' : 'Save About Page ✅'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* ── STATS */}
+          {/* STATS */}
           {activeTab === 'stats' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-2xl">
               <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
                 <LayoutDashboard className="w-5 h-5 text-[#C9A84C]" />
                 <h2 className="text-lg font-semibold text-[#1A2744]">About Page Stats</h2>
               </div>
-              <p className="text-sm text-gray-400 mb-6">These numbers appear on the About page in the gold stats bar. Edit the value and label for each stat.</p>
+              <p className="text-sm text-gray-400 mb-6">These numbers appear on the About page in the gold stats bar.</p>
               <div className="space-y-4">
                 {stats.map((stat, i) => (
                   <div key={stat.id} className="flex gap-3 items-center">
-                    <div className="flex-1">
-                      <label className="text-xs font-medium text-gray-500 block mb-1">Value</label>
-                      <Input
-                        value={stat.value}
-                        onChange={e => setStats(stats.map((s, idx) => idx === i ? {...s, value: e.target.value} : s))}
-                        placeholder="e.g. 150+"
-                        className="font-bold text-[#1A2744]"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="text-xs font-medium text-gray-500 block mb-1">Label</label>
-                      <Input
-                        value={stat.label}
-                        onChange={e => setStats(stats.map((s, idx) => idx === i ? {...s, label: e.target.value} : s))}
-                        placeholder="e.g. Projects Completed"
-                      />
-                    </div>
-                    <button
-                      onClick={async () => {
-                        await supabase.from('about_stats').delete().eq('id', stat.id);
-                        setStats(stats.filter((_, idx) => idx !== i));
-                        toast.success('Deleted ✅');
-                      }}
-                      className="mt-5 p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex-shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex-1"><label className="text-xs font-medium text-gray-500 block mb-1">Value</label><Input value={stat.value} onChange={e => setStats(stats.map((s, idx) => idx === i ? {...s, value: e.target.value} : s))} placeholder="e.g. 150+" className="font-bold text-[#1A2744]" /></div>
+                    <div className="flex-1"><label className="text-xs font-medium text-gray-500 block mb-1">Label</label><Input value={stat.label} onChange={e => setStats(stats.map((s, idx) => idx === i ? {...s, label: e.target.value} : s))} placeholder="e.g. Projects Completed" /></div>
+                    <button onClick={async () => { await supabase.from('about_stats').delete().eq('id', stat.id); setStats(stats.filter((_, idx) => idx !== i)); toast.success('Deleted ✅'); }} className="mt-5 p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
-
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setStats([...stats, { id: `new-${Date.now()}`, value: '', label: '', sort_order: stats.length }])}
-                  className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-[#C9A84C] hover:text-[#C9A84C] transition-all"
-                >
-                  <Plus className="w-4 h-4" /> Add Stat
-                </button>
-                <button
-                  onClick={async () => {
-                    setSavingStats(true);
-                    try {
-                      for (const stat of stats) {
-                        if (stat.id.toString().startsWith('new-')) {
-                          await supabase.from('about_stats').insert([{ value: stat.value, label: stat.label, sort_order: stat.sort_order }]);
-                        } else {
-                          await supabase.from('about_stats').update({ value: stat.value, label: stat.label }).eq('id', stat.id);
-                        }
-                      }
-                      await fetchAll();
-                      toast.success('Stats saved ✅');
-                    } catch { toast.error('Failed to save'); }
-                    setSavingStats(false);
-                  }}
-                  disabled={savingStats}
-                  className="flex-1 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90 transition-all disabled:opacity-50"
-                >
-                  {savingStats ? 'Saving...' : 'Save All Stats ✅'}
+                <button onClick={() => setStats([...stats, { id: `new-${Date.now()}`, value: '', label: '', sort_order: stats.length }])} className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-[#C9A84C] hover:text-[#C9A84C] transition-all"><Plus className="w-4 h-4" /> Add Stat</button>
+                <button onClick={async () => { setSavingStats(true); try { for (const stat of stats) { if (stat.id.toString().startsWith('new-')) { await supabase.from('about_stats').insert([{ value: stat.value, label: stat.label, sort_order: stat.sort_order }]); } else { await supabase.from('about_stats').update({ value: stat.value, label: stat.label }).eq('id', stat.id); } } await fetchAll(); toast.success('Stats saved ✅'); } catch { toast.error('Failed to save'); } setSavingStats(false); }} disabled={savingStats} className="flex-1 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90 transition-all disabled:opacity-50">{savingStats ? 'Saving...' : 'Save All Stats ✅'}</button>
+              </div>
+            </div>
+          )}
+
+          {/* SOCIAL MEDIA */}
+          {activeTab === 'social' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Share2 className="w-5 h-5 text-[#C9A84C]" />Social Media Links</h2>
+                <button onClick={() => { setSocialForm({ platform: SOCIAL_PLATFORMS[0], url: '' }); setShowAddSocial(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Link</button>
+              </div>
+
+              <p className="text-sm text-gray-400 mb-6">These links appear in the footer of your website. Add your real profile URLs.</p>
+
+              {showAddSocial && <Modal title="Add Social Link" onClose={() => setShowAddSocial(false)}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Platform</label>
+                    <select value={socialForm.platform} onChange={e => setSocialForm({...socialForm, platform: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C]">
+                      {SOCIAL_PLATFORMS.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Profile URL *</label>
+                    <Input value={socialForm.url} onChange={e => setSocialForm({...socialForm, url: e.target.value})} placeholder="https://instagram.com/yourpage" />
+                  </div>
+                </div>
+                <ModalActions onCancel={() => setShowAddSocial(false)} onSave={addSocialLink} saving={savingSocial} saveLabel="Add Link" saveStyle="dark" />
+              </Modal>}
+
+              {showEditSocial && <Modal title="Edit Social Link" onClose={() => setShowEditSocial(false)}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Platform</label>
+                    <select value={socialForm.platform} onChange={e => setSocialForm({...socialForm, platform: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C]">
+                      {SOCIAL_PLATFORMS.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Profile URL *</label>
+                    <Input value={socialForm.url} onChange={e => setSocialForm({...socialForm, url: e.target.value})} />
+                  </div>
+                </div>
+                <ModalActions onCancel={() => setShowEditSocial(false)} onSave={saveEditSocial} saving={savingSocial} saveLabel="Save Changes" />
+              </Modal>}
+
+              {socialLinks.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 text-center py-20 text-gray-400">
+                  No social links yet — add your first one!
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {socialLinks.map(s => (
+                    <div key={s.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
+                      <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                        <Share2 className="w-5 h-5 text-[#C9A84C]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#1A2744]">{s.platform}</p>
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline truncate block">{s.url}</a>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => openEditSocial(s)} className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => deleteSocialLink(s.id)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SITE SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-3xl">
+              <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+                <Settings className="w-5 h-5 text-[#C9A84C]" />
+                <h2 className="text-lg font-semibold text-[#1A2744]">Site Settings</h2>
+              </div>
+              <div className="space-y-6">
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Contact Information</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Phone Number</label>
+                      <Input value={siteSettings.phone || ''} onChange={e => setSiteSettings({...siteSettings, phone: e.target.value})} placeholder="+971 50 123 4567" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">WhatsApp Number</label>
+                      <Input value={siteSettings.whatsapp || ''} onChange={e => setSiteSettings({...siteSettings, whatsapp: e.target.value})} placeholder="+971 50 123 4567 (with country code)" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Email Address</label>
+                      <Input value={siteSettings.email || ''} onChange={e => setSiteSettings({...siteSettings, email: e.target.value})} placeholder="info@finedesign.ae" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Address</label>
+                      <Input value={siteSettings.address || ''} onChange={e => setSiteSettings({...siteSettings, address: e.target.value})} placeholder="Dubai, United Arab Emirates" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Hero Section Text</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Tagline</label>
+                      <Input value={siteSettings.hero_tagline || ''} onChange={e => setSiteSettings({...siteSettings, hero_tagline: e.target.value})} placeholder="Design • Build • Better Futures" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Subtitle</label>
+                      <textarea value={siteSettings.hero_subtitle || ''} onChange={e => setSiteSettings({...siteSettings, hero_subtitle: e.target.value})} rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C] resize-none" placeholder="Transforming spaces into exceptional experiences..." />
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={saveSettings} disabled={savingSettings} className="w-full py-3 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90 transition-all disabled:opacity-50">
+                  {savingSettings ? 'Saving...' : 'Save Settings ✅'}
                 </button>
               </div>
             </div>
