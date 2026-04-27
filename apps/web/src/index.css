@@ -1,0 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root, .dark {
+    --background: 0 0% 100%;
+    --foreground: 221 45% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 221 45% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 221 45% 18%;
+    --primary: 221 45% 18%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 14% 97%;
+    --secondary-foreground: 221 45% 18%;
+    --muted: 51 14% 93%;
+    --muted-foreground: 221 25% 40%;
+    --accent: 44 54% 54%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 60 9% 89%;
+    --input: 0 0% 100%;
+    --ring: 44 54% 54%;
+    --radius: 0.5rem;
+    --gold: 44 54% 54%;
+    --gold-light: 44 54% 65%;
+    --nav-bg: 0 0% 100%;
+    --nav-text: 221 45% 18%;
+    --nav-accent: 44 54% 54%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "DM Sans", sans-serif;
+    overflow-x: clip;
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Playfair Display", serif;
+    text-wrap: balance;
+    color: hsl(var(--foreground));
+  }
+
+  h1 {
+    @apply text-5xl md:text-6xl lg:text-7xl font-bold leading-tight;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl lg:text-5xl font-semibold leading-snug;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl font-semibold leading-snug;
+  }
+
+  p {
+    @apply leading-relaxed max-w-prose;
+  }
+}
+
+@layer components {
+  .gold-gradient {
+    background: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 100%);
+  }
+
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  .border-gold {
+    border-color: hsl(var(--gold));
+  }
+
+  .bg-gold {
+    background-color: hsl(var(--gold));
+  }
+
+  .hover-gold {
+    transition: all 0.3s ease;
+  }
+
+  .hover-gold:hover {
+    color: hsl(var(--gold));
+  }
+
+  .sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background-color: hsl(var(--nav-bg));
+    color: hsl(var(--nav-text));
+    transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+  }
+
+  .sticky-nav-scrolled {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .nav-link {
+    position: relative;
+    color: hsl(var(--nav-text));
+    font-weight: 500;
+    transition: color 0.2s ease;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .nav-link:hover {
+    color: hsl(var(--nav-accent));
+  }
+
+  .nav-link-active {
+    color: hsl(var(--nav-accent));
+  }
+
+  .nav-link-active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 2px;
+    background-color: hsl(var(--nav-accent));
+  }
+}
+
+@layer utilities {
+  .fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+
+  .slide-in-left {
+    animation: slideInLeft 0.6s ease-out forwards;
+  }
+
+  .slide-in-right {
+    animation: slideInRight 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-scroll-indicator {
+    animation: scrollIndicator 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollIndicator {
+    0%, 100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translateY(10px);
+      opacity: 1;
+    }
+  }
+}
