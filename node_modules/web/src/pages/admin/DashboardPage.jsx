@@ -69,7 +69,7 @@ const DashboardPage = () => {
   const [aboutId, setAboutId] = useState(null);
   const [stats, setStats] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
-  const [siteSettings, setSiteSettings] = useState({ phone: '', email: '', address: '', whatsapp: '', hours: '', map_url: '', map_link: '', hero_tagline: '', hero_subtitle: '' });
+  const [siteSettings, setSiteSettings] = useState({ phone: '', email: '', address: '', whatsapp: '', phone2: '', hours: '', map_url: '', map_link: '', hero_tagline: '', hero_subtitle: '' });
   const [siteSettingsId, setSiteSettingsId] = useState(null);
 
   // Portfolio state
@@ -790,6 +790,10 @@ const DashboardPage = () => {
                     <div>
                       <label className="text-sm font-semibold text-gray-700 block mb-2">Phone Number</label>
                       <Input value={siteSettings.phone || ''} onChange={e => setSiteSettings({...siteSettings, phone: e.target.value})} placeholder="+971 50 123 4567" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 block mb-2">Phone Number 2</label>
+                      <Input value={siteSettings.phone2 || ''} onChange={e => setSiteSettings({...siteSettings, phone2: e.target.value})} placeholder="+20 100 000 0000" />
                     </div>
                     <div>
                       <label className="text-sm font-semibold text-gray-700 block mb-2">WhatsApp Number</label>

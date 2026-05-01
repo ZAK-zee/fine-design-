@@ -48,7 +48,9 @@ const Footer = () => {
         { platform: 'LinkedIn', url: '#' },
       ];
 
-  const phone = siteSettings?.phone || '+971 50 123 4567';
+  const phone = siteSettings?.phone || '+233039871';
+  const phone2 = siteSettings?.phone2 || '01033020090';
+  const whatsapp = siteSettings?.whatsapp || '01000056333';
   const email = siteSettings?.email || 'info@finedesign.ae';
   const address = siteSettings?.address || 'Dubai, United Arab Emirates';
 
@@ -86,6 +88,12 @@ const Footer = () => {
             <div className="space-y-2">
               <a href={"tel:" + phone} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                 <Phone className="w-4 h-4 flex-shrink-0" />{phone}
+              </a>
+              <a href={"tel:" + phone2} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
+                <Phone className="w-4 h-4 flex-shrink-0" />{phone2}
+              </a>
+              <a href={"https://wa.me/" + whatsapp.replace(/[^0-9]/g, '')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
+                <Phone className="w-4 h-4 flex-shrink-0" />WhatsApp: {whatsapp}
               </a>
               <a href={"mailto:" + email} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                 <Mail className="w-4 h-4 flex-shrink-0" />{email}

@@ -56,9 +56,21 @@ const ContactPage = () => {
     },
     {
       icon: Phone,
-      label: language === 'en' ? 'Phone' : 'الهاتف',
-      value: siteSettings?.phone || t.contact.info.phone,
-      href: `tel:${siteSettings?.phone || t.contact.info.phone}`
+      label: language === 'en' ? 'Phone 1' : 'هاتف 1',
+      value: siteSettings?.phone || '+233039871',
+      href: `tel:${siteSettings?.phone || '+233039871'}`
+    },
+    {
+      icon: Phone,
+      label: language === 'en' ? 'Phone 2' : 'هاتف 2',
+      value: siteSettings?.phone2 || '01033020090',
+      href: `tel:${siteSettings?.phone2 || '01033020090'}`
+    },
+    {
+      icon: Phone,
+      label: language === 'en' ? 'WhatsApp' : 'واتساب',
+      value: siteSettings?.whatsapp || '01000056333',
+      href: `https://wa.me/${(siteSettings?.whatsapp || '01000056333').replace(/[^0-9]/g, '')}`
     },
     {
       icon: Mail,
