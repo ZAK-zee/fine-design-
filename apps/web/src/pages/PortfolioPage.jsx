@@ -8,7 +8,7 @@ import { supabase } from '@/supabaseClient.js';
 import Header from '@/components/Header.jsx';
 import Footer from '@/components/Footer.jsx';
 
-const CATEGORIES = ['All', 'Construction', 'Interior Finishing', 'Fit-Out', 'HVAC', 'Fire Protection', 'Civil Works'];
+const CATEGORIES = ['All', 'Construction & Building Works', 'Interior Finishing & Fit-Out', 'Fire Fighting & Fire Alarm Systems', 'HVAC Maintenance & Services'];
 
 // ── Skeleton card
 const SkeletonCard = ({ tall }) => (

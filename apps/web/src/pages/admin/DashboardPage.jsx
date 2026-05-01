@@ -17,7 +17,7 @@ const TABS = [
   { id: 'settings', label: 'Site Settings', icon: Settings },
 ];
 
-const CATEGORIES = ['Construction', 'Interior Finishing', 'Fit-Out', 'HVAC', 'Fire Protection', 'Civil Works'];
+const CATEGORIES = ['Construction & Building Works', 'Interior Finishing & Fit-Out', 'Fire Fighting & Fire Alarm Systems', 'HVAC Maintenance & Services'];
 const SOCIAL_PLATFORMS = ['Facebook', 'Instagram', 'LinkedIn', 'Twitter', 'YouTube', 'Website'];
 
 const Modal = ({ title, onClose, children }) => (
