@@ -8,7 +8,7 @@ import AboutPage from '@/pages/AboutPage.jsx';
 import ServicesPage from '@/pages/ServicesPage.jsx';
 import PortfolioPage from '@/pages/PortfolioPage.jsx';
 import ContactPage from '@/pages/ContactPage.jsx';
-import WorksPage from '@/pages/WorksPage.jsx';
+import WorksPage from '@/pages/Workspage.jsx';
 import LoginPage from '@/pages/admin/LoginPage.jsx';
 import DashboardPage from '@/pages/admin/DashboardPage.jsx';
 
