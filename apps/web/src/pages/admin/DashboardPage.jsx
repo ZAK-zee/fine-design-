@@ -13,6 +13,7 @@ const TABS = [
   { id: 'team', label: 'Team', icon: Users },
   { id: 'about', label: 'About Page', icon: FileText },
   { id: 'stats', label: 'Stats', icon: LayoutDashboard },
+  { id: 'clients', label: 'Clients', icon: Users },
   { id: 'social', label: 'Social Media', icon: Share2 },
   { id: 'settings', label: 'Site Settings', icon: Settings },
 ];
@@ -69,6 +70,14 @@ const DashboardPage = () => {
   const [aboutId, setAboutId] = useState(null);
   const [stats, setStats] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [showEditClient, setShowEditClient] = useState(false);
+  const [clientForm, setClientForm] = useState({ name: '', website_url: '', logo_url: '' });
+  const [clientFile, setClientFile] = useState(null);
+  const [savingClient, setSavingClient] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+
   const [siteSettings, setSiteSettings] = useState({ phone: '', email: '', address: '', whatsapp: '', phone2: '', hours: '', map_url: '', map_link: '', hero_tagline: '', hero_subtitle: '' });
   const [siteSettingsId, setSiteSettingsId] = useState(null);
 
@@ -79,6 +88,13 @@ const DashboardPage = () => {
   const [photoFile, setPhotoFile] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState(null);
+
+  // Bulk upload state
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkFiles, setBulkFiles] = useState([]);
+  const [bulkCategory, setBulkCategory] = useState(CATEGORIES[0]);
+  const [uploadingBulk, setUploadingBulk] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
 
   // Service state
   const [showAddService, setShowAddService] = useState(false);
@@ -129,7 +145,7 @@ const DashboardPage = () => {
 
   const fetchAll = async () => {
     setIsLoading(true);
-    const [msgRes, portRes, svcRes, testRes, teamRes, aboutRes, statsRes, socialRes, settingsRes] = await Promise.all([
+    const [msgRes, portRes, svcRes, testRes, teamRes, aboutRes, statsRes, socialRes, settingsRes, clientsRes] = await Promise.all([
       supabase.from('messages').select('*').order('created_at', { ascending: false }),
       supabase.from('portfolio').select('*').order('created_at', { ascending: false }),
       supabase.from('services').select('*').order('created_at', { ascending: true }),
@@ -139,6 +155,7 @@ const DashboardPage = () => {
       supabase.from('about_stats').select('*').order('sort_order', { ascending: true }),
       supabase.from('social_links').select('*').order('sort_order', { ascending: true }),
       supabase.from('site_settings').select('*').limit(1),
+      supabase.from('clients').select('*').order('sort_order', { ascending: true }),
     ]);
     if (msgRes.data) setMessages(msgRes.data);
     if (portRes.data) setPortfolio(portRes.data);
@@ -148,6 +165,7 @@ const DashboardPage = () => {
     if (aboutRes.data && aboutRes.data.length > 0) { setAboutContent(aboutRes.data[0]); setAboutId(aboutRes.data[0].id); }
     if (statsRes.data) setStats(statsRes.data);
     if (socialRes.data) setSocialLinks(socialRes.data);
+    if (clientsRes.data) setClients(clientsRes.data);
     if (settingsRes.data && settingsRes.data.length > 0) {
       setSiteSettings(settingsRes.data[0]);
       setSiteSettingsId(settingsRes.data[0].id);
@@ -206,6 +224,63 @@ const DashboardPage = () => {
   };
 
   const deletePhoto = async (id) => { await supabase.from('portfolio').delete().eq('id', id); setPortfolio(portfolio.filter(p => p.id !== id)); toast.success('Deleted ✅'); };
+
+  // Bulk upload
+  const bulkUploadPhotos = async () => {
+    if (bulkFiles.length === 0) { toast.error('Select at least one image'); return; }
+    setUploadingBulk(true);
+    setBulkProgress(0);
+    let uploaded = 0;
+    const newItems = [];
+    for (const file of bulkFiles) {
+      try {
+        const image_url = await uploadImage(file, 'portfolio');
+        const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        const { data } = await supabase.from('portfolio').insert([{ title, category: bulkCategory, image_url, description: '' }]).select();
+        if (data) newItems.push(data[0]);
+        uploaded++;
+        setBulkProgress(Math.round((uploaded / bulkFiles.length) * 100));
+      } catch { toast.error('Failed to upload ' + file.name); }
+    }
+    setPortfolio(prev => [...newItems, ...prev]);
+    setShowBulkUpload(false); setBulkFiles([]); setBulkProgress(0);
+    toast.success(uploaded + ' photos uploaded ✅');
+    setUploadingBulk(false);
+  };
+
+  // Clients CRUD
+  const addClient = async () => {
+    if (!clientForm.name) { toast.error('Client name is required'); return; }
+    setSavingClient(true);
+    try {
+      let logo_url = clientForm.logo_url;
+      if (clientFile) logo_url = await uploadImage(clientFile, 'clients');
+      const { data, error } = await supabase.from('clients').insert([{ ...clientForm, logo_url, sort_order: clients.length }]).select();
+      if (error) throw error;
+      setClients([...clients, data[0]]);
+      setShowAddClient(false); setClientForm({ name: '', website_url: '', logo_url: '' }); setClientFile(null);
+      toast.success('Client added ✅');
+    } catch { toast.error('Failed'); }
+    setSavingClient(false);
+  };
+
+  const openEditClient = (c) => { setEditingClient(c); setClientForm({ name: c.name, website_url: c.website_url || '', logo_url: c.logo_url || '' }); setClientFile(null); setShowEditClient(true); };
+
+  const saveEditClient = async () => {
+    setSavingClient(true);
+    try {
+      let logo_url = clientForm.logo_url;
+      if (clientFile) logo_url = await uploadImage(clientFile, 'clients');
+      const { data, error } = await supabase.from('clients').update({ ...clientForm, logo_url }).eq('id', editingClient.id).select();
+      if (error) throw error;
+      setClients(clients.map(c => c.id === editingClient.id ? data[0] : c));
+      setShowEditClient(false); setEditingClient(null);
+      toast.success('Updated ✅');
+    } catch { toast.error('Failed'); }
+    setSavingClient(false);
+  };
+
+  const deleteClient = async (id) => { await supabase.from('clients').delete().eq('id', id); setClients(clients.filter(c => c.id !== id)); toast.success('Deleted ✅'); };
 
   // Services
   const addService = async () => {
@@ -465,8 +540,46 @@ const DashboardPage = () => {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Image className="w-5 h-5 text-[#C9A84C]" />Portfolio Photos</h2>
-                <button onClick={() => { setPhotoForm({ title: '', category: CATEGORIES[0], description: '', image_url: '' }); setPhotoFile(null); setShowAddPhoto(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Photo</button>
+                <div className="flex gap-3">
+                  <button onClick={() => { setBulkFiles([]); setBulkCategory(CATEGORIES[0]); setShowBulkUpload(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#C9A84C] text-[#C9A84C] font-semibold rounded-xl hover:bg-amber-50"><Upload className="w-4 h-4" />Bulk Upload</button>
+                  <button onClick={() => { setPhotoForm({ title: '', category: CATEGORIES[0], description: '', image_url: '' }); setPhotoFile(null); setShowAddPhoto(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Photo</button>
+                </div>
               </div>
+              {showBulkUpload && <Modal title="Bulk Upload Photos" onClose={() => setShowBulkUpload(false)}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Category for all photos</label>
+                    <select value={bulkCategory} onChange={e => setBulkCategory(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A84C]">
+                      {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Select Images</label>
+                    <label className="flex flex-col items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl px-4 py-8 cursor-pointer hover:border-[#C9A84C] transition-colors">
+                      <Upload className="w-8 h-8 text-gray-400" />
+                      <span className="text-sm text-gray-500">{bulkFiles.length > 0 ? bulkFiles.length + ' files selected' : 'Click to select multiple images'}</span>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={e => setBulkFiles(Array.from(e.target.files))} />
+                    </label>
+                    {bulkFiles.length > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                        {bulkFiles.map((f, i) => (
+                          <div key={i} className="relative">
+                            <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-16 object-cover rounded-lg" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {uploadingBulk && (
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Uploading...</span><span>{bulkProgress}%</span></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-[#C9A84C] h-2 rounded-full transition-all" style={{width: bulkProgress + '%'}} /></div>
+                    </div>
+                  )}
+                </div>
+                <ModalActions onCancel={() => setShowBulkUpload(false)} onSave={bulkUploadPhotos} saving={uploadingBulk} saveLabel={"Upload " + bulkFiles.length + " Photos"} saveStyle="dark" />
+              </Modal>}
+
               {showAddPhoto && <Modal title="Add Photo" onClose={() => setShowAddPhoto(false)}>
                 <div className="space-y-4">
                   <div><label className="text-sm font-medium text-gray-700 block mb-1">Title *</label><Input value={photoForm.title} onChange={e => setPhotoForm({...photoForm, title: e.target.value})} placeholder="Project title" /></div>
@@ -704,6 +817,56 @@ const DashboardPage = () => {
                 <button onClick={() => setStats([...stats, { id: `new-${Date.now()}`, value: '', label: '', sort_order: stats.length }])} className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-[#C9A84C] hover:text-[#C9A84C] transition-all"><Plus className="w-4 h-4" /> Add Stat</button>
                 <button onClick={async () => { setSavingStats(true); try { for (const stat of stats) { if (stat.id.toString().startsWith('new-')) { await supabase.from('about_stats').insert([{ value: stat.value, label: stat.label, sort_order: stat.sort_order }]); } else { await supabase.from('about_stats').update({ value: stat.value, label: stat.label }).eq('id', stat.id); } } await fetchAll(); toast.success('Stats saved ✅'); } catch { toast.error('Failed to save'); } setSavingStats(false); }} disabled={savingStats} className="flex-1 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90 transition-all disabled:opacity-50">{savingStats ? 'Saving...' : 'Save All Stats ✅'}</button>
               </div>
+            </div>
+          )}
+
+          {/* CLIENTS */}
+          {activeTab === 'clients' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-[#1A2744] flex items-center gap-2"><Users className="w-5 h-5 text-[#C9A84C]" />Our Clients</h2>
+                <button onClick={() => { setClientForm({ name: '', website_url: '', logo_url: '' }); setClientFile(null); setShowAddClient(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-[#C9A84C] text-black font-semibold rounded-xl hover:bg-[#C9A84C]/90"><Plus className="w-4 h-4" />Add Client</button>
+              </div>
+              <p className="text-sm text-gray-400 mb-6">These appear on the Clients page. Add logo and website for each client.</p>
+
+              {showAddClient && <Modal title="Add Client" onClose={() => setShowAddClient(false)}>
+                <div className="space-y-4">
+                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Client Name *</label><Input value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} placeholder="e.g. ABC Corporation" /></div>
+                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Website URL</label><Input value={clientForm.website_url} onChange={e => setClientForm({...clientForm, website_url: e.target.value})} placeholder="https://client-website.com" /></div>
+                  <ImageUpload file={clientFile} setFile={setClientFile} currentUrl={clientForm.logo_url} label="Client Logo" />
+                </div>
+                <ModalActions onCancel={() => setShowAddClient(false)} onSave={addClient} saving={savingClient} saveLabel="Add Client" saveStyle="dark" />
+              </Modal>}
+
+              {showEditClient && <Modal title="Edit Client" onClose={() => setShowEditClient(false)}>
+                <div className="space-y-4">
+                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Client Name *</label><Input value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} /></div>
+                  <div><label className="text-sm font-medium text-gray-700 block mb-1">Website URL</label><Input value={clientForm.website_url} onChange={e => setClientForm({...clientForm, website_url: e.target.value})} /></div>
+                  <ImageUpload file={clientFile} setFile={setClientFile} currentUrl={clientForm.logo_url} label="Client Logo" />
+                </div>
+                <ModalActions onCancel={() => setShowEditClient(false)} onSave={saveEditClient} saving={savingClient} saveLabel="Save Changes" />
+              </Modal>}
+
+              {clients.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 text-center py-20 text-gray-400">No clients yet — add your first one!</div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {clients.map(client => (
+                    <div key={client.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col items-center gap-3 shadow-sm">
+                      {client.logo_url
+                        ? <img src={client.logo_url} alt={client.name} className="h-16 max-w-full object-contain" />
+                        : <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center"><span className="text-xl font-bold text-[#C9A84C]">{client.name[0]}</span></div>
+                      }
+                      <p className="font-semibold text-[#1A2744] text-center text-sm">{client.name}</p>
+                      {client.website_url && <a href={client.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate w-full text-center">{client.website_url}</a>}
+                      <div className="flex gap-2 mt-auto">
+                        <button onClick={() => openEditClient(client)} className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => deleteClient(client.id)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

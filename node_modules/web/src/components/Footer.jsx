@@ -34,10 +34,11 @@ const Footer = () => {
 
   const navLinks = [
     { path: '/', label: t.nav.home },
-    { path: '/about', label: t.nav.about },
     { path: '/services', label: t.nav.services },
+    { path: '/works', label: language === 'en' ? 'Our Works' : 'مشاريعنا' },
     { path: '/portfolio', label: t.nav.portfolio },
-    { path: '/contact', label: t.nav.contact }
+    { path: '/contact', label: t.nav.contact },
+    { path: '/about', label: t.nav.about },
   ];
 
   const displaySocials = socialLinks.length > 0
@@ -92,9 +93,14 @@ const Footer = () => {
               <a href={"tel:" + phone2} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                 <Phone className="w-4 h-4 flex-shrink-0" />{phone2}
               </a>
-              <a href={"https://wa.me/" + whatsapp.replace(/[^0-9]/g, '')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
-                <Phone className="w-4 h-4 flex-shrink-0" />WhatsApp: {whatsapp}
-              </a>
+              <div className="flex flex-col gap-1">
+                <a href={"tel:" + whatsapp} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
+                  <Phone className="w-4 h-4 flex-shrink-0" />{whatsapp}
+                </a>
+                <a href={"https://wa.me/" + whatsapp.replace(/[^0-9]/g, '')} target="_blank" rel="noopener noreferrer" className="text-xs text-green-400 hover:text-green-300 ps-6 transition-colors">
+                  💬 WhatsApp
+                </a>
+              </div>
               <a href={"mailto:" + email} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                 <Mail className="w-4 h-4 flex-shrink-0" />{email}
               </a>

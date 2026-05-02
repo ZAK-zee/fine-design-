@@ -68,9 +68,10 @@ const ContactPage = () => {
     },
     {
       icon: Phone,
-      label: language === 'en' ? 'WhatsApp' : 'واتساب',
+      label: language === 'en' ? 'Phone / WhatsApp' : 'هاتف / واتساب',
       value: siteSettings?.whatsapp || '01000056333',
-      href: `https://wa.me/${(siteSettings?.whatsapp || '01000056333').replace(/[^0-9]/g, '')}`
+      href: `tel:${siteSettings?.whatsapp || '01000056333'}`,
+      href2: `https://wa.me/${(siteSettings?.whatsapp || '01000056333').replace(/[^0-9]/g, '')}`
     },
     {
       icon: Mail,
@@ -114,10 +115,18 @@ const ContactPage = () => {
                         </div>
                         <div>
                           <p className="font-medium mb-1">{info.label}</p>
-                          {info.href
-                            ? <a href={info.href} className="text-muted-foreground hover:text-gold transition-colors">{info.value}</a>
-                            : <p className="text-muted-foreground">{info.value}</p>
-                          }
+                          {info.href2 ? (
+                            <div className="flex flex-col gap-1">
+                              <a href={info.href} className="text-muted-foreground hover:text-gold transition-colors">{info.value}</a>
+                              <a href={info.href2} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 hover:text-green-700 font-medium transition-colors">
+                                {language === 'en' ? '💬 Open in WhatsApp' : '💬 فتح في واتساب'}
+                              </a>
+                            </div>
+                          ) : info.href ? (
+                            <a href={info.href} className="text-muted-foreground hover:text-gold transition-colors">{info.value}</a>
+                          ) : (
+                            <p className="text-muted-foreground">{info.value}</p>
+                          )}
                         </div>
                       </div>
                     ))}

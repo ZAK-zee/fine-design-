@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,9 +13,10 @@ const MobileNav = ({ isOpen, onClose }) => {
   const navLinks = [
     { path: '/', label: t.nav.home },
     { path: '/services', label: t.nav.services },
-    { path: '/about', label: t.nav.about },
+    { path: '/works', label: language === 'en' ? 'Our Works' : 'مشاريعنا' },
     { path: '/portfolio', label: t.nav.portfolio },
-    { path: '/contact', label: t.nav.contact }
+    { path: '/contact', label: t.nav.contact },
+    { path: '/about', label: t.nav.about },
   ];
 
   return (

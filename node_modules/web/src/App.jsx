@@ -8,6 +8,7 @@ import AboutPage from '@/pages/AboutPage.jsx';
 import ServicesPage from '@/pages/ServicesPage.jsx';
 import PortfolioPage from '@/pages/PortfolioPage.jsx';
 import ContactPage from '@/pages/ContactPage.jsx';
+import WorksPage from '@/pages/WorksPage.jsx';
 import LoginPage from '@/pages/admin/LoginPage.jsx';
 import DashboardPage from '@/pages/admin/DashboardPage.jsx';
 
@@ -22,6 +23,7 @@ function App() {
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/works" element={<WorksPage />} />
           <Route path="/admin/login" element={<LoginPage />} />
           <Route path="/admin" element={<DashboardPage />} />
         </Routes>

@@ -40,10 +40,11 @@ const Header = () => {
 
   const navLinks = [
     { path: '/', label: t.nav.home },
-    { path: '/about', label: t.nav.about },
     { path: '/services', label: t.nav.services },
+    { path: '/works', label: language === 'en' ? 'Our Works' : 'مشاريعنا' },
     { path: '/portfolio', label: t.nav.portfolio },
-    { path: '/contact', label: t.nav.contact }
+    { path: '/contact', label: t.nav.contact },
+    { path: '/about', label: t.nav.about },
   ];
 
   return (
