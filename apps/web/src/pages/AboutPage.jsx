@@ -277,33 +277,27 @@ const AboutPage = () => {
                 </h2>
               </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="bg-background rounded-2xl border border-border overflow-hidden">
                 {team.map((member, i) => (
                   <motion.div
                     key={member.id}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: i * 0.1 }}
-                    className="bg-background rounded-2xl overflow-hidden border border-border hover:border-gold/30 hover:shadow-lg transition-all duration-400 group"
+                    transition={{ duration: 0.4, delay: i * 0.06 }}
+                    className={`flex items-center gap-6 px-8 py-5 hover:bg-secondary/50 transition-colors ${i !== 0 ? 'border-t border-border' : ''}`}
                   >
-                    <div className="aspect-[4/3] bg-secondary overflow-hidden relative">
-                      {member.image_url ? (
-                        <img src={member.image_url} alt={member.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="w-24 h-24 rounded-full bg-gold/10 flex items-center justify-center">
-                            <span className="text-4xl font-bold text-gold" style={{ fontFamily: 'Playfair Display, serif' }}>
-                              {member.name.split(' ').map(n => n[0]).join('')}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-foreground font-bold text-xl mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>{member.name}</h3>
-                      <p className="text-gold text-sm font-semibold uppercase tracking-wide mb-3">{member.role}</p>
-                      {member.bio && <p className="text-muted-foreground text-sm leading-relaxed">{member.bio}</p>}
+                    {/* Photo only if exists */}
+                    {member.image_url && (
+                      <img src={member.image_url} alt={member.name} className="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-gold/20" />
+                    )}
+                    {/* Name & Role */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <h3 className="text-foreground font-bold text-lg" style={{ fontFamily: 'Playfair Display, serif' }}>{member.name}</h3>
+                        <span className="text-gold text-xs font-semibold uppercase tracking-wider">{member.role}</span>
+                      </div>
+                      {member.bio && <p className="text-muted-foreground text-sm mt-1 leading-relaxed">{member.bio}</p>}
                     </div>
                   </motion.div>
                 ))}
