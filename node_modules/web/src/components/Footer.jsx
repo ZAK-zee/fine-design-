@@ -97,7 +97,7 @@ const Footer = () => {
                 <a href={"tel:" + whatsapp} className="flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-gold transition-colors">
                   <Phone className="w-4 h-4 flex-shrink-0" />{whatsapp}
                 </a>
-                <a href={"https://wa.me/" + whatsapp.replace(/[^0-9]/g, '')} target="_blank" rel="noopener noreferrer" className="text-xs text-green-400 hover:text-green-300 ps-6 transition-colors">
+                <a href={"https://wa.me/2" + whatsapp.replace(/[^0-9]/g, '')} target="_blank" rel="noopener noreferrer" className="text-xs text-green-400 hover:text-green-300 ps-6 transition-colors">
                   💬 WhatsApp
                 </a>
               </div>
