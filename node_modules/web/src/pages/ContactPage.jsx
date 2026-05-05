@@ -71,7 +71,7 @@ const ContactPage = () => {
       label: language === 'en' ? 'Phone / WhatsApp' : 'هاتف / واتساب',
       value: siteSettings?.whatsapp || '01000056333',
       href: `tel:${siteSettings?.whatsapp || '01000056333'}`,
-      href2: `https://wa.me/${(siteSettings?.whatsapp || '01000056333').replace(/[^0-9]/g, '')}`
+      href2: `https://wa.me/2${(siteSettings?.whatsapp || '01000056333').replace(/[^0-9]/g, '')}`
     },
     {
       icon: Mail,
